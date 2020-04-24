@@ -1,3 +1,11 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^tmp$
+^\.Rprofile$
+^cran-comments\.md$
+^.*tmp$
+^LICENSE$
+^revdep$
+^.circleci$
+^ci-build$
+^cobertura.xml$
+^docs$

@@ -1,0 +1,48 @@
+ version: 2
+ jobs:
+   build:
+     environment:
+       - LINTR_COMMENT_BOT: 'false'
+       - NOT_CRAN: 'true'
+
+     working_directory: ~/data.world-r
+
+     docker:
+       - image: rocker/tidyverse
+
+     steps:
+       - checkout
+       - run: apt-get update && apt-get install -y qpdf
+       - run: mkdir ci-build ci-build/reports ci-build/dist
+
+       - run:
+           name: Install data.world-r
+           command: Rscript -e 'devtools::install()'
+           
+       - run:
+           name: Check against release version
+           command: Rscript -e 'devtools::check()'
+ 
+       - run:
+           name: Lint
+           command: Rscript -e 'lintr::expect_lint_free()'
+
+       - run:
+           name: Collect test coverage stats
+           command: Rscript -e 'library(covr); x <- package_coverage(line_exclusions = c("R/data.world-defunct.R")); to_cobertura(x, filename = "ci-build/reports/cobertura.xml"); coverage <- percent_coverage(x); q(status = coverage < 80);'
+
+       - run:
+           name: Build
+           command: |
+             Rscript -e 'devtools::build(path = "ci-build/dist")'
+             if [[ "${CIRCLE_BRANCH}" = "master" ]]; then
+               Rscript -e 'devtools::build_win(version = c("R-oldrelease", "R-release", "R-devel"))'
+             fi
+
+       - store_artifacts:
+           path: ~/data.world-r/ci-build/dist
+           destination: dist
+
+       - store_artifacts:
+           path: ~/data.world-r/ci-build/reports
+           destination: reports
